@@ -158,6 +158,8 @@ def run(sequence_dir, detection_file, output_file, min_confidence,
 
     """
     seq_info = gather_sequence_info(sequence_dir, detection_file)
+
+    # 这是一个NearestNeighborDistanceMetric类的实例,初始化传入参数为距离度量的方式、门限阈值、一个跟踪器保留的外观特征的最大个数
     metric = nn_matching.NearestNeighborDistanceMetric(
         "cosine", max_cosine_distance, nn_budget)
     tracker = Tracker(metric)

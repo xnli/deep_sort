@@ -9,31 +9,22 @@ from .track import Track
 
 class Tracker:
     """
-    This is the multi-target tracker.
 
-    Parameters
+    一个多目标跟踪器
+
+    属性
     ----------
     metric : nn_matching.NearestNeighborDistanceMetric
-        A distance metric for measurement-to-track association.
+        一个距离度量类的实例，用于得到跟踪器与检测目标之间的距离
     max_age : int
-        Maximum number of missed misses before a track is deleted.
+        在一个跟踪器消失之前，允许匹配不上的最大个数
     n_init : int
-        Number of consecutive detections before the track is confirmed. The
-        track state is set to `Deleted` if a miss occurs within the first
-        `n_init` frames.
-
-    Attributes
-    ----------
-    metric : nn_matching.NearestNeighborDistanceMetric
-        The distance metric used for measurement to track association.
-    max_age : int
-        Maximum number of missed misses before a track is deleted.
-    n_init : int
-        Number of frames that a track remains in initialization phase.
+        在一个跟踪器确认之前，连续检测到的数量。如果在确认之前出现了未匹配上的清空，则置为删除
     kf : kalman_filter.KalmanFilter
-        A Kalman filter to filter target trajectories in image space.
+        一个卡尔曼滤波器
     tracks : List[Track]
-        The list of active tracks at the current time step.
+        跟踪器列表, 在当前时刻存在的跟踪器列表（包括未确认和确认两类）
+
 
     """
 
@@ -47,6 +38,7 @@ class Tracker:
         self.tracks = []
         self._next_id = 1
 
+    # 对所有的track都进行一次预测
     def predict(self):
         """Propagate track state distributions one time step forward.
 
@@ -56,12 +48,15 @@ class Tracker:
             track.predict(self.kf)
 
     def update(self, detections):
-        """Perform measurement update and track management.
+        """
+        1. 执行级联匹配
+            1.1 把跟踪器列表中的跟踪器分为两类：确认的跟踪器和未确认的跟踪器
 
-        Parameters
+
+        参数
         ----------
         detections : List[deep_sort.detection.Detection]
-            A list of detections at the current time step.
+            在当前时刻的目标检测列表
 
         """
         # Run matching cascade.
@@ -90,8 +85,10 @@ class Tracker:
         self.metric.partial_fit(
             np.asarray(features), np.asarray(targets), active_targets)
 
+    # 级联匹配
     def _match(self, detections):
 
+        # 参数分别为跟踪器、目标检测对象、需要进行匹配的跟踪器index、需要进行匹配的目标检测index
         def gated_metric(tracks, dets, track_indices, detection_indices):
             features = np.array([dets[i].feature for i in detection_indices])
             targets = np.array([tracks[i].track_id for i in track_indices])

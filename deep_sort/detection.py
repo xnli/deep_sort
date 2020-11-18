@@ -2,6 +2,9 @@
 import numpy as np
 
 
+# Detection类保存基于目标检测器得到的一个检测框BBox、置信度、基于reid获取得到的对应的embedding特征
+# 提供了BBox位置格式转换的方法
+
 class Detection(object):
     """
     This class represents a bounding box detection in a single image.

@@ -71,6 +71,8 @@ def iou_cost(tracks, detections, track_indices=None,
 
     cost_matrix = np.zeros((len(track_indices), len(detection_indices)))
     for row, track_idx in enumerate(track_indices):
+        # 这个条件应该走不进来。调用的时候，输入的tracks 包括两部分：
+        # 一部分是在级联匹配中没有匹配上且time_since_update==1的跟踪器;一部分是未确认的跟踪器，对于未确认的跟踪器，如果如果匹配不上的情况，就会被删除。所以它的time_since_update也是1
         if tracks[track_idx].time_since_update > 1:
             cost_matrix[row, :] = linear_assignment.INFTY_COST
             continue

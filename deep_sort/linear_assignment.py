@@ -44,11 +44,13 @@ def min_cost_matching(
         * A list of unmatched detection indices.
 
     """
+    # 在级联匹配和IOU匹配的使用中，track_indices和detection_indices 都有传参
     if track_indices is None:
         track_indices = np.arange(len(tracks))
     if detection_indices is None:
         detection_indices = np.arange(len(detections))
 
+    # 在级联匹配不会满足这个条件。在和IOU匹配的使用中，两种情况都有可能。
     if len(detection_indices) == 0 or len(track_indices) == 0:
         return [], track_indices, detection_indices  # Nothing to match.
 
@@ -78,8 +80,18 @@ def min_cost_matching(
 def matching_cascade(
         distance_metric, max_distance, cascade_depth, tracks, detections,
         track_indices=None, detection_indices=None):
-    """Run matching cascade.
+    """
+    执行级联匹配
 
+    当入参track_indices=[]时，输出结果matches,unmatched_tracks,unmatched_detections分别为[],[],list(range(len(detections)))
+    当入参track_indices!=[]时:
+        1. 设置初始unmatched_detections 为list(range(len(detections)))， 初始matches为[]
+        2. 开始依据跟踪器的time_since_update做遍历，第一轮是time_since_update=1的所有跟踪器，第二轮是time_since_update=2的所有跟踪器，以此类推...
+        3. 对于某一轮遍历的内容，以time_since_update=1为例，具体内容包括：
+            3.1 首先先判断unmatched_detections是否为空，如果为空，则跳出循环。为空说明当前帧的所有目标检测对象都已经匹配成功了，即使还有未匹配的跟踪器，也不需要再继续匹配。
+            3.2 从所有确认的跟踪器筛选出跟踪器的time_since_update==1的所有跟踪器，得到一个子跟踪器列表
+            3.3 如果子跟踪器列表为空，则跳出本次循环，继续向下一次循环
+            3.4
     Parameters
     ----------
     distance_metric : Callable[List[Track], List[Detection], List[int], List[int]) -> ndarray
@@ -98,12 +110,9 @@ def matching_cascade(
     detections : List[detection.Detection]
         A list of detections at the current time step.
     track_indices : Optional[List[int]]
-        List of track indices that maps rows in `cost_matrix` to tracks in
-        `tracks` (see description above). Defaults to all tracks.
+        跟踪器索引的列表。默认不设置的画则为全部跟踪器
     detection_indices : Optional[List[int]]
-        List of detection indices that maps columns in `cost_matrix` to
-        detections in `detections` (see description above). Defaults to all
-        detections.
+        目标检测对象索引的列表。默认不设置则为全部目标检测对象
 
     Returns
     -------
